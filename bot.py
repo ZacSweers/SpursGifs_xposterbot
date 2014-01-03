@@ -41,13 +41,15 @@ def exitBot():
 
 
 # Submission
-def submit(subreddit, title, link):
+def submit(subreddit, submission):
     try:
-        if r.get_info(url=link):
+        if len(r.get_info(url=submission.link)) > 0:
             print "Already submitted"
             already_done.append(submission.id)
             return
-        subreddit.submit(title + " (x-post from /r/coys)", url=link)
+        subreddit.submit(
+            submission.title + " (x-post from /r/coys)", url=submission.link)
+        followupComment(submission)
     except praw.errors.APIException:
         logging.exception("Error on link submission.")
 
@@ -58,12 +60,40 @@ def extension(url):
 
 
 # Validates if a submission should be posted
-def validateSubmission(submission, ):
+def validateSubmission(submission):
     if submission.id not in already_done and \
         (submission.domain in allowedDomains or
          extension(submission.url) in allowedExtensions):
         return True
     return False
+
+
+# Followup Comment
+def followupComment(submission):
+    newSubmission = r.get_info(submission.url)
+    followupCommentText = "Originally posted by /u/" + \
+        submission.author + "[here](" + submission.permalink + ").\n\n"
+
+    # TODO: Extract this to a global variable
+    followupCommentText += "I am an [open source](https://github.com/pandanomic/SpursGifs_xposterbot) bot created by user pandanomic for the puerpose of x-posting gifs, vines, and gyfcats from /r/coys over to /r/SpursGifs.\n\n"
+    followupCommentText += "Feedback/bug report? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic)."
+
+    try:
+        newSubmission.add_comment(followupCommentText)
+        notifyComment(newSubmission.permalink, submission)
+    except praw.errors.APIException:
+        logging.exception("Error on followupComment")
+
+
+# Notifying comment
+def notifyComment(newURL, submission):
+    notifyCommentText = "X-posted to [here](" + newURL + ").\n\n"
+    notifyCommentText += "I am an [open source](https://github.com/pandanomic/SpursGifs_xposterbot) bot created by user pandanomic for the puerpose of x-posting gifs, vines, and gyfcats from /r/coys over to /r/SpursGifs.\n\n"
+    notifyCommentText += "Feedback/bug report? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic)."
+    try:
+        submission.add_comment(notifyCommentText)
+    except praw.errors.APIException:
+        logging.exception("Error on notifyComment")
 
 # If the bot is already running
 if(os.path.isfile('BotRunning')):
@@ -113,20 +143,16 @@ if(os.path.isfile(dbFile)):
 f = open(dbFile, 'w+')
 
 print already_done
-del already_done[:]
+
+# Uncomment to delete cache contents
+# del already_done[:]
 
 fileOpened = True
 
 while True:
     for submission in coys_subreddit.get_hot(limit=10):
         if validateSubmission(submission):
-            # already_done.append(submission.id)
-            print "Allowed: " + submission.title
+            already_done.append(submission.id)
+            submit(spursgifs_subreddit, submission)
     print 'Looped'
     time.sleep(60)
-
-# submit(spursgifs_subreddit, "Test", "http://i.imgur.com/zlCgjl2.gif")
-
-# for submission in coys_subreddit.get_hot(limit=10):
-#     if validateSubmission(submission):
-#         print "Allowed: " + submission.title

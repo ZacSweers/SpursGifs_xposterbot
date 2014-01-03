@@ -34,3 +34,8 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Prop files
+login.properties
+spursgifs_xposterDB
+BotRunning

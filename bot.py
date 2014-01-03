@@ -15,7 +15,7 @@ import logging 		# logging
 dbFile = "spursgifs_xposterDB"
 
 # File with login credentials
-propsFile = "login.txt"
+propsFile = "login.properties"
 
 # flag to check if db file's already checked
 fileOpened = False
@@ -29,7 +29,7 @@ def exit_handler():
         # pickle.dump(nameLinkDict, fi)
         # fi.close()
     print("Shutting Down")
-    os.remove("theBotIsRunning")
+    os.remove("BotRunning")
 
 # Register the function that get called on exit
 atexit.register(exit_handler)
@@ -66,13 +66,13 @@ def validateSubmission(submission, ):
     return False
 
 # If the bot is already running
-if(os.path.isfile('theBotIsRunning')):
+if(os.path.isfile('BotRunning')):
     print("The bot is already running, shutting down")
     exitBot()
 
 # The bot was not running
 # create the file that tell the bot is running
-open('theBotIsRunning', 'w').close()
+open('BotRunning', 'w').close()
 
 
 try:

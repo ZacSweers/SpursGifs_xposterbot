@@ -52,6 +52,9 @@ def submit(subreddit, submission):
         print "(Already submitted)"
         if submission.id not in already_done:
             already_done.append(submission.id)
+    except praw.errors.RateLimitExceeded:
+        print "(Rate Limit Exceeded)"
+        already_done.remove(submission.id)
     except praw.errors.APIException:
         logging.exception("Error on link submission.")
 
@@ -77,15 +80,19 @@ def followupComment(submission):
     newSubmission = user.get_submitted(limit=1).next()
     followupCommentText = "Originally posted by /u/" + \
         submission.author.fullname + \
-        ", [here](" + submission.permalink + ").\n\n"
+        " [here](" + submission.permalink + ").\n\n"
 
     # TODO: Extract this to a global variable
-    followupCommentText += "I am an [open source](https://github.com/pandanomic/SpursGifs_xposterbot) bot created by user pandanomic for the purpose of x-posting gifs, vines, and gyfcats from /r/coys over to /r/SpursGifs.\n\n"
-    followupCommentText += "> Feedback/bug report? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic)."
+    followupCommentText += "------\n\n"
+    followupCommentText += "*Hi! I'm a bot created to x-posting gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*\n\n"
+    followupCommentText += "*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*\n\n"
+    followupCommentText += "*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"
 
     try:
         newSubmission.add_comment(followupCommentText)
         notifyComment(newSubmission.permalink, submission)
+    except praw.errors.RateLimitExceeded:
+        print "(Rate Limit Exceeded)"
     except praw.errors.APIException:
         logging.exception("Error on followupComment")
 
@@ -94,10 +101,15 @@ def followupComment(submission):
 def notifyComment(newURL, submission):
     print("(Notify Comment)")
     notifyCommentText = "X-posted to [here](" + newURL + ").\n\n"
-    notifyCommentText += "I am an [open source](https://github.com/pandanomic/SpursGifs_xposterbot) bot created by user pandanomic for the purpose of x-posting gifs, vines, and gyfcats from /r/coys over to /r/SpursGifs.\n\n"
-    notifyCommentText += "> Feedback/bug report? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic)."
+    notifyCommentText += "------\n\n"
+    notifyCommentText += "*Hi! I'm a bot created to x-posting gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*\n\n"
+    notifyCommentText += "*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*\n\n"
+    notifyCommentText += "*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"
+
     try:
         submission.add_comment(notifyCommentText)
+    except praw.errors.RateLimitExceeded:
+        print "(Rate Limit Exceeded)"
     except praw.errors.APIException:
         logging.exception("Error on notifyComment")
 
@@ -110,6 +122,7 @@ if(os.path.isfile('BotRunning')):
 # create the file that tell the bot is running
 open('BotRunning', 'w').close()
 
+print "(Starting)"
 
 try:
     # reading login info from a file, it should be username (newline)
@@ -127,10 +140,10 @@ try:
     coys_subreddit = r.get_subreddit('coys')
 
     # submit to /r/SpursGifs
-    # spursgifs_subreddit = r2.get_subreddit('SpursGifs')
+    spursgifs_subreddit = r.get_subreddit('SpursGifs')
 
     # submit to testing
-    spursgifs_subreddit = r.get_subreddit('pandanomic_testing')
+    # spursgifs_subreddit = r.get_subreddit('pandanomic_testing')
 except:
     exitBot()
 
@@ -157,7 +170,8 @@ fileOpened = True
 
 counter = 0
 while True:
-    for submission in coys_subreddit.get_hot(limit=10):
+    print "(Parsing top 20)"
+    for submission in coys_subreddit.get_hot(limit=20):
         if validateSubmission(submission):
             already_done.append(submission.id)
             submit(spursgifs_subreddit, submission)

@@ -12,6 +12,7 @@ import os  			# OS-related stuff
 import sys 			# ""
 import atexit 		# To handle unexpected crashes or just normal exiting
 import logging 		# logging
+import signal       # Catch SIGINT
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -40,14 +41,23 @@ cron = False
 
 # Called when exiting the program
 def exit_handler():
+    print "(SHUTTING DOWN)"
     if fileOpened:
         pickle.dump(already_done, f)
         f.close()
-    print("(Shutting Down)")
     os.remove("BotRunning")
+
+
+# Called on SIGINT
+def signal_handler(signal, frame):
+        print '\n\tCaught SIGINT, exiting gracefully...'
+        sys.exit()
 
 # Register the function that get called on exit
 atexit.register(exit_handler)
+
+# Register function to call on SIGINT
+signal.signal(signal.SIGINT, signal_handler)
 
 
 # Function to exit the bot

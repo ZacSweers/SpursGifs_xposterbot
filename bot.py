@@ -27,6 +27,10 @@ propsFile = "login.properties"
 # flag to check if db file's already checked
 fileOpened = False
 
+# subreddit to x-post to. Changes if testing
+global postSub
+postSub = "SpursGifs"
+
 
 # Called when exiting the program
 def exit_handler():
@@ -47,7 +51,7 @@ def exitBot():
 
 # Submission
 def submit(subreddit, submission):
-    print("(Submitting)")
+    print("(Submitting to /r/" + postSub + ")")
     try:
         subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=submission.url)
@@ -122,6 +126,13 @@ open('BotRunning', 'w').close()
 
 print "(Starting)"
 
+args = sys.argv
+
+if len(args) > 1:
+    print "(Args: " + str(args[1:]) + ")"
+    if args[1] == "--testing":
+        postSub = "pandanomic_testing"
+
 try:
     # reading login info from a file, it should be username (newline) password
     with open("login.properties", "r") as loginFile:
@@ -136,11 +147,9 @@ try:
     # read off /r/coys
     coys_subreddit = r.get_subreddit('coys')
 
-    # submit to /r/SpursGifs
-    spursgifs_subreddit = r.get_subreddit('SpursGifs')
+    # submit to /r/SpursGifs or /r/pandanomic_testing
+    spursgifs_subreddit = r.get_subreddit(postSub)
 
-    # submit to testing
-    # spursgifs_subreddit = r.get_subreddit('pandanomic_testing')
 except:
     print "(Login failure)"
     exitBot()

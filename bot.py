@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 Based on what I learned creeping the source code for
 https://github.com/cris9696/PlayStoreLinks_Bot
@@ -31,13 +33,17 @@ fileOpened = False
 global postSub
 postSub = "SpursGifs"
 
+# for cron jobs
+global cron
+cron = False
+
 
 # Called when exiting the program
 def exit_handler():
     if fileOpened:
         pickle.dump(already_done, f)
         f.close()
-    print("Shutting Down")
+    print("(Shutting Down)")
     os.remove("BotRunning")
 
 # Register the function that get called on exit
@@ -49,20 +55,34 @@ def exitBot():
     sys.exit()
 
 
+# Main bot runner
+def bot(subreddit):
+    print "(Parsing new 30)"
+    newCount = 0
+    for submission in coys_subreddit.get_new(limit=30):
+        if validateSubmission(submission):
+            already_done.append(submission.id)
+            print "(New Post)"
+            submit(spursgifs_subreddit, submission)
+
+    if newCount == 0:
+        print "(Nothing new)"
+
+
 # Submission
 def submit(subreddit, submission):
-    print("(Submitting to /r/" + postSub + ")")
+    print "\tSubmitting to /r/" + postSub + ")"
     try:
         subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=submission.url)
         followupComment(submission)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
-        print "(Already submitted, caching)"
+        print "\t--Already submitted, caching"
         if submission.id not in already_done:
             already_done.append(submission.id)
     except praw.errors.RateLimitExceeded:
-        print "(Rate Limit Exceeded)"
+        print "\t--Rate Limit Exceeded"
         already_done.remove(submission.id)
     except praw.errors.APIException:
         logging.exception("Error on link submission.")
@@ -84,7 +104,7 @@ def validateSubmission(submission):
 
 # Followup Comment
 def followupComment(submission):
-    print("(Followup Comment)")
+    print("\tFollowup Comment...")
     user = r.get_redditor("spursgifs_xposterbot")
     newSubmission = user.get_submitted(limit=1).next()
     followupCommentText = "Originally posted [here](" + \
@@ -97,21 +117,21 @@ def followupComment(submission):
         newSubmission.add_comment(followupCommentText)
         notifyComment(newSubmission.permalink, submission)
     except praw.errors.RateLimitExceeded:
-        print "(Rate Limit Exceeded)"
+        print "\t--Rate Limit Exceeded"
     except praw.errors.APIException:
         logging.exception("Error on followupComment")
 
 
 # Notifying comment
 def notifyComment(newURL, submission):
-    print("(Notify Comment)")
+    print("\tNotify Comment...")
     notifyCommentText = "X-posted to [here](" + newURL + ").\n\n"
     notifyCommentText += commentTag
 
     try:
         submission.add_comment(notifyCommentText)
     except praw.errors.RateLimitExceeded:
-        print "(Rate Limit Exceeded)"
+        print "\t--Rate Limit Exceeded"
     except praw.errors.APIException:
         logging.exception("Error on notifyComment")
 
@@ -129,10 +149,14 @@ print "(Starting)"
 args = sys.argv
 
 if len(args) > 1:
-    print "(Args: " + str(args[1:]) + ")"
-    if args[1] == "--testing":
+    print "\tGetting args..."
+    if "--testing" in args:
         postSub = "pandanomic_testing"
+    if "--cron" in args:
+        cron = True
+    print "\t(Args: " + str(args[1:]) + ")"
 
+print "\tLogging in..."
 try:
     # reading login info from a file, it should be username (newline) password
     with open("login.properties", "r") as loginFile:
@@ -151,16 +175,15 @@ try:
     spursgifs_subreddit = r.get_subreddit(postSub)
 
 except:
-    print "(Login failure)"
+    print "FAILURE"
     exitBot()
-
-print("(Logged in)")
 
 allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com"]
 allowedExtensions = [".gif"]
 
 # Array with previously linked posts
 # Check the db cache first
+print "\tChecking cache..."
 already_done = []
 if(os.path.isfile(dbFile)):
     f = open(dbFile, 'r+')
@@ -176,12 +199,14 @@ print '(Cache size: ' + str(len(already_done)) + ")"
 fileOpened = True
 
 counter = 0
-while True:
-    print "(Parsing top 30)"
-    for submission in coys_subreddit.get_hot(limit=30):
-        if validateSubmission(submission):
-            already_done.append(submission.id)
-            submit(spursgifs_subreddit, submission)
-    print '(Looped - ' + str(counter) + ')'
-    counter += 1
-    time.sleep(60)
+
+if cron:
+    print "(Cron job)"
+    bot(spursgifs_subreddit)
+else:
+    print "(Looping)"
+    while True:
+        bot(spursgifs_subreddit)
+        counter += 1
+        print '(Looped - ' + str(counter) + ')'
+        time.sleep(60)

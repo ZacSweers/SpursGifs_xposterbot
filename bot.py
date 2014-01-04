@@ -81,11 +81,11 @@ def bot(subreddit):
 
 # Submission
 def submit(subreddit, submission):
-    print "\tSubmitting to /r/" + postSub + ")"
+    print "\tSubmitting to /r/" + postSub + "..."
     try:
-        subreddit.submit(
+        newSubmission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=submission.url)
-        followupComment(submission)
+        followupComment(submission, newSubmission)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
@@ -113,10 +113,10 @@ def validateSubmission(submission):
 
 
 # Followup Comment
-def followupComment(submission):
+def followupComment(submission, newSubmission):
     print("\tFollowup Comment...")
-    user = r.get_redditor("spursgifs_xposterbot")
-    newSubmission = user.get_submitted(limit=1).next()
+    # user = r.get_redditor("spursgifs_xposterbot")
+    # newSubmission = user.get_submitted(limit=1).next()
     followupCommentText = "Originally posted [here](" + \
         submission.permalink + ") by /u/" + \
         submission.author.name + \
@@ -154,7 +154,7 @@ if(os.path.isfile('BotRunning')):
 # create the file that tell the bot is running
 open('BotRunning', 'w').close()
 
-print "(Starting)"
+print "(Starting Bot)"
 
 args = sys.argv
 

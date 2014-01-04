@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import pickle 		# dump list and dict to file
 import os  			# OS-related stuff
 
@@ -18,8 +20,12 @@ def saveDB(dbFile, data):
     f.close()
 
 
+print "(Cleaning Cache)"
 db = "spursgifs_xposterDB"
+print "\tOpening cache..."
 already_done = openDB(db)
+print "\tEmptying..."
 del already_done[:]
 saveDB(db, already_done)
 assert len(openDB(db)) is 0
+print "(Done emptying cache)"

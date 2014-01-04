@@ -11,6 +11,13 @@ import sys 			# ""
 import atexit 		# To handle unexpected crashes or just normal exiting
 import logging 		# logging
 
+# tagline
+commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
+    " from /r/coys over to /r/SpursGifs.*\n\n*Feedback/bug reports? Send a" + \
+    " message to [pandanomic](http://www.reddit.com/message/compose?to=pan" + \
+    "danomic).*\n\n*[Source code](https://github.com/pandanomic/Spurs" + \
+    "Gifs_xposterbot)*"
+
 # DB for caching previous posts
 dbFile = "spursgifs_xposterDB"
 
@@ -26,8 +33,6 @@ def exit_handler():
     if fileOpened:
         pickle.dump(already_done, f)
         f.close()
-        # pickle.dump(nameLinkDict, fi)
-        # fi.close()
     print("Shutting Down")
     os.remove("BotRunning")
 
@@ -49,7 +54,7 @@ def submit(subreddit, submission):
         followupComment(submission)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
-        print "(Already submitted)"
+        print "(Already submitted, caching)"
         if submission.id not in already_done:
             already_done.append(submission.id)
     except praw.errors.RateLimitExceeded:
@@ -78,15 +83,11 @@ def followupComment(submission):
     print("(Followup Comment)")
     user = r.get_redditor("spursgifs_xposterbot")
     newSubmission = user.get_submitted(limit=1).next()
-    followupCommentText = "Originally posted by /u/" + \
-        submission.author.fullname + \
-        " [here](" + submission.permalink + ").\n\n"
-
-    # TODO: Extract this to a global variable
-    followupCommentText += "------\n\n"
-    followupCommentText += "*Hi! I'm a bot created to x-posting gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*\n\n"
-    followupCommentText += "*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*\n\n"
-    followupCommentText += "*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"
+    followupCommentText = "Originally posted [here](" + \
+        submission.permalink + ") by /u/" + \
+        submission.author.name + \
+        ".\n\n"
+    followupCommentText += commentTag
 
     try:
         newSubmission.add_comment(followupCommentText)
@@ -101,10 +102,7 @@ def followupComment(submission):
 def notifyComment(newURL, submission):
     print("(Notify Comment)")
     notifyCommentText = "X-posted to [here](" + newURL + ").\n\n"
-    notifyCommentText += "------\n\n"
-    notifyCommentText += "*Hi! I'm a bot created to x-posting gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*\n\n"
-    notifyCommentText += "*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*\n\n"
-    notifyCommentText += "*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"
+    notifyCommentText += commentTag
 
     try:
         submission.add_comment(notifyCommentText)
@@ -125,8 +123,7 @@ open('BotRunning', 'w').close()
 print "(Starting)"
 
 try:
-    # reading login info from a file, it should be username (newline)
-    # password
+    # reading login info from a file, it should be username (newline) password
     with open("login.properties", "r") as loginFile:
         loginInfo = loginFile.readlines()
 
@@ -145,11 +142,12 @@ try:
     # submit to testing
     # spursgifs_subreddit = r.get_subreddit('pandanomic_testing')
 except:
+    print "(Login failure)"
     exitBot()
 
 print("(Logged in)")
 
-allowedDomains = ["gfycat.com", "vine.co"]
+allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com"]
 allowedExtensions = [".gif"]
 
 # Array with previously linked posts
@@ -170,8 +168,8 @@ fileOpened = True
 
 counter = 0
 while True:
-    print "(Parsing top 20)"
-    for submission in coys_subreddit.get_hot(limit=20):
+    print "(Parsing top 30)"
+    for submission in coys_subreddit.get_hot(limit=30):
         if validateSubmission(submission):
             already_done.append(submission.id)
             submit(spursgifs_subreddit, submission)

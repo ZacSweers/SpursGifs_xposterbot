@@ -188,7 +188,7 @@ except:
     print "FAILURE"
     exitBot()
 
-allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com"]
+allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com", "fitbamob.com"]
 allowedExtensions = [".gif"]
 
 # Array with previously linked posts

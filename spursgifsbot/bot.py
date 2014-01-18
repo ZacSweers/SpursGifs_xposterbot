@@ -50,7 +50,7 @@ def exit_handler():
 
 # Called on SIGINT
 def signal_handler(signal, frame):
-        print '\n\tCaught SIGINT, exiting gracefully...'
+        print '\n(Caught SIGINT, exiting gracefully...)'
         sys.exit()
 
 # Register the function that get called on exit
@@ -150,7 +150,7 @@ def notifyComment(newURL, submission):
 def retrieveLoginCredentials(loginType):
     if loginType == "propFile":
         # reading login info from a file, it should be username \n password
-        print "\tReading login.properties"
+        print "\t--Reading login.properties"
         with open("login.properties", "r") as loginFile:
             loginInfo = loginFile.readlines()
 
@@ -158,14 +158,8 @@ def retrieveLoginCredentials(loginType):
         loginInfo[1] = loginInfo[1].replace('\n', '')
         return loginInfo
     if loginType == "env":
-        print "\tReading env variables"
-        print "\tVals are " + os.environ['REDDIT_USERNAME'] + " - " + os.environ['REDDIT_PASSWORD']
-        USERNAME = os.environ['REDDIT_USERNAME']
-        PASSWORD = os.environ['REDDIT_PASSWORD']
-        loginInfo = []
-        loginInfo.append(USERNAME)
-        loginInfo.append(PASSWORD)
-        print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]
+        print "\t--Reading env variables"
+        loginInfo = [os.environ['REDDIT_USERNAME'], os.environ['REDDIT_PASSWORD']]
         return loginInfo
 
 
@@ -197,8 +191,6 @@ print "\tLogging in via " + loginType + "..."
 try:
     loginInfo = retrieveLoginCredentials(loginType)
 
-    print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]
-
     r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
     r.login(loginInfo[0], loginInfo[1])
 
@@ -209,7 +201,7 @@ try:
     spursgifs_subreddit = r.get_subreddit(postSub)
 
 except:
-    print "FAILURE"
+    print "LOGIN FAILURE"
     exitBot()
 
 allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com", "fitbamob.com"]

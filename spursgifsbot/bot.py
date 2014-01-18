@@ -161,6 +161,7 @@ def retrieveLoginCredentials(loginType):
         print "\tReading env variables"
         loginInfo[0] = os.environ['REDDIT_USERNAME']
         loginInfo[1] = os.environ['REDDIT_PASSWORD']
+        print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]
         return loginInfo
 
 
@@ -191,6 +192,8 @@ if len(args) > 1:
 print "\tLogging in via " + loginType + "..."
 try:
     loginInfo = retrieveLoginCredentials(loginType)
+
+    print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]
 
     r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
     r.login(loginInfo[0], loginInfo[1])

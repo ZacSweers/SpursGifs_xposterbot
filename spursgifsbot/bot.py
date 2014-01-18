@@ -159,9 +159,9 @@ def retrieveLoginCredentials(loginType):
         return loginInfo
     if loginType == "env":
         print "\tReading env variables"
+        print "\tVals are " + os.environ['REDDIT_USERNAME'] + " - " + os.environ['REDDIT_USERNAME']
         loginInfo[0] = os.environ['REDDIT_USERNAME']
         loginInfo[1] = os.environ['REDDIT_PASSWORD']
-        print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]
         return loginInfo
 
 

@@ -1,7 +1,10 @@
 SpursGifs_xposterbot
 ====================
 
-Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/gyfcats from /r/coys to /r/SpursGifs
+Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/gyfcats from /r/coys to /r/SpursGifs.
+
+### TODO
+* Use a DB on heroku for caching there (local pickle file doesn't persist between runs)
 
 
 ## License

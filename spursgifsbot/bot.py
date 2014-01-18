@@ -145,6 +145,23 @@ def notifyComment(newURL, submission):
     except praw.errors.APIException:
         logging.exception("Error on notifyComment")
 
+
+# Login
+def retrieveLoginCredentials(loginType):
+    if loginType == "propFile":
+        # reading login info from a file, it should be username \n password
+        with open("login.properties", "r") as loginFile:
+            loginInfo = loginFile.readlines()
+
+        loginInfo[0] = loginInfo[0].replace('\n', '')
+        loginInfo[1] = loginInfo[1].replace('\n', '')
+        return loginInfo
+    if loginType == "env":
+        loginInfo[0] = os.environ['REDDIT_USERNAME']
+        loginInfo[1] = os.environ['REDDIT_PASSWORD']
+        return loginInfo
+
+
 # If the bot is already running
 if(os.path.isfile('BotRunning')):
     print("The bot is already running, shutting down")
@@ -157,6 +174,7 @@ open('BotRunning', 'w').close()
 print "(Starting Bot)"
 
 args = sys.argv
+loginType = "propFile"
 
 if len(args) > 1:
     print "\tGetting args..."
@@ -164,16 +182,13 @@ if len(args) > 1:
         postSub = "pandanomic_testing"
     if "--cron" in args:
         cron = True
+    if "--env" in args:
+        loginType = "env"
     print "\t(Args: " + str(args[1:]) + ")"
 
 print "\tLogging in..."
 try:
-    # reading login info from a file, it should be username (newline) password
-    with open("login.properties", "r") as loginFile:
-        loginInfo = loginFile.readlines()
-
-    loginInfo[0] = loginInfo[0].replace('\n', '')
-    loginInfo[1] = loginInfo[1].replace('\n', '')
+    loginInfo = retrieveLoginCredentials("propFile")
 
     r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
     r.login(loginInfo[0], loginInfo[1])

@@ -4,15 +4,18 @@
 Based on what I learned creeping the source code for
 https://github.com/cris9696/PlayStoreLinks_Bot
 """
-
-import praw        # reddit wrapper
-import time        # obvious
-import pickle      # dump list and dict to file
-import os          # OS-related stuff
-import sys         # ""
-import atexit      # To handle unexpected crashes or just normal exiting
-import logging     # logging
-import signal      # Catch SIGINT
+import praw         # reddit wrapper
+import time         # obvious
+import pickle       # dump list and dict to file
+import os           # OS-related stuff
+import sys          # ""
+import atexit       # To handle unexpected crashes or just normal exiting
+import logging      # logging
+import signal       # Catch SIGINT
+import string       # Used in generating random strings
+import random       # ""
+import requests     # For URL requests, ued in gfycat API
+import urllib       # For encoding urls
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -61,31 +64,39 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 # Function to exit the bot
-def exitBot():
+def exit_bot():
     sys.exit()
 
 
 # Main bot runner
-def bot(subreddit):
+def bot():
     print "(Parsing new 30)"
-    newCount = 0
+    new_count = 0
     for submission in coys_subreddit.get_new(limit=30):
-        if validateSubmission(submission):
+        if validate_submission(submission):
             already_done.append(submission.id)
             print "(New Post)"
             submit(spursgifs_subreddit, submission)
 
-    if newCount == 0:
+    if new_count == 0:
         print "(Nothing new)"
 
 
 # Submission
 def submit(subreddit, submission):
+    url_to_submit = submission.url
+
+    # Convert if it's a gif
+    if extension(submission.url) == ".gif":
+        new_url_to_submit = gfycat_convert(url_to_submit)
+        if new_url_to_submit != "Error":
+            url_to_submit = new_url_to_submit
+
     print "\tSubmitting to /r/" + postSub + "..."
     try:
-        newSubmission = subreddit.submit(
-            submission.title + " (x-post from /r/coys)", url=submission.url)
-        followupComment(submission, newSubmission)
+        new_submission = subreddit.submit(
+            submission.title + " (x-post from /r/coys)", url=url_to_submit)
+        followup_comment(submission, new_submission)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
@@ -104,28 +115,28 @@ def extension(url):
 
 
 # Validates if a submission should be posted
-def validateSubmission(submission):
+def validate_submission(submission):
     if submission.id not in already_done and \
             (submission.domain in allowedDomains or
-                     extension(submission.url) in allowedExtensions):
+             extension(submission.url) in allowedExtensions):
         return True
     return False
 
 
 # Followup Comment
-def followupComment(submission, newSubmission):
+def followup_comment(submission, new_submission):
     print("\tFollowup Comment...")
     # user = r.get_redditor("spursgifs_xposterbot")
-    # newSubmission = user.get_submitted(limit=1).next()
-    followupCommentText = "Originally posted [here](" + \
-                          submission.permalink + ") by /u/" + \
-                          submission.author.name + \
-                          ".\n\n"
-    followupCommentText += commentTag
+    # new_submission = user.get_submitted(limit=1).next()
+    followup_comment_text = "Originally posted [here](" + \
+                            submission.permalink + ") by /u/" + \
+                            submission.author.name + \
+                            ".\n\n"
+    followup_comment_text += commentTag
 
     try:
-        newSubmission.add_comment(followupCommentText)
-        notifyComment(newSubmission.permalink, submission)
+        new_submission.add_comment(followup_comment_text)
+        notify_comment(new_submission.permalink, submission)
     except praw.errors.RateLimitExceeded:
         print "\t--Rate Limit Exceeded"
     except praw.errors.APIException:
@@ -133,13 +144,13 @@ def followupComment(submission, newSubmission):
 
 
 # Notifying comment
-def notifyComment(newURL, submission):
+def notify_comment(new_url, submission):
     print("\tNotify Comment...")
-    notifyCommentText = "X-posted to [here](" + newURL + ").\n\n"
-    notifyCommentText += commentTag
+    notify_comment_text = "X-posted to [here](" + new_url + ").\n\n"
+    notify_comment_text += commentTag
 
     try:
-        submission.add_comment(notifyCommentText)
+        submission.add_comment(notify_comment_text)
     except praw.errors.RateLimitExceeded:
         print "\t--Rate Limit Exceeded"
     except praw.errors.APIException:
@@ -147,26 +158,50 @@ def notifyComment(newURL, submission):
 
 
 # Login
-def retrieveLoginCredentials(loginType):
-    if loginType == "propFile":
+def retrieve_login_credentials(login_type):
+    if login_type == "propFile":
         # reading login info from a file, it should be username \n password
         print "\t--Reading login.properties"
         with open("login.properties", "r") as loginFile:
-            loginInfo = loginFile.readlines()
+            login_info = loginFile.readlines()
 
-        loginInfo[0] = loginInfo[0].replace('\n', '')
-        loginInfo[1] = loginInfo[1].replace('\n', '')
-        return loginInfo
-    if loginType == "env":
+        login_info[0] = login_info[0].replace('\n', '')
+        login_info[1] = login_info[1].replace('\n', '')
+        return login_info
+    if login_type == "env":
         print "\t--Reading env variables"
-        loginInfo = [os.environ['REDDIT_USERNAME'], os.environ['REDDIT_PASSWORD']]
-        return loginInfo
+        login_info = [os.environ['REDDIT_USERNAME'], os.environ['REDDIT_PASSWORD']]
+        return login_info
+
+
+# Generate a random 10 letter string
+# Borrowed from here: http://stackoverflow.com/a/16962716/3034339
+def gen_random_string():
+    return ''.join(random.sample(string.letters * 10, 10))
+
+
+# Convert gifs to gfycat
+def gfycat_convert(url_to_convert):
+    print '\tConverting gif to gfycat'
+    encoded_url = urllib.quote(url_to_convert, '')
+
+    # Convert
+    url_string = 'http://upload.gfycat.com/transcode/' + gen_random_string() + '?fetchUrl=' + encoded_url
+    conversion_response = requests.get(url_string)
+    if conversion_response.status_code == 200:
+        print '\t--success'
+        j = conversion_response.json()
+        gfyname = j["gfyname"]
+        return "http://gfycat.com/" + gfyname
+    else:
+        print '\t--failed'
+        return "Error"
 
 
 # If the bot is already running
-if (os.path.isfile('BotRunning')):
+if os.path.isfile('BotRunning'):
     print("The bot is already running, shutting down")
-    exitBot()
+    exit_bot()
 
 # The bot was not running
 # create the file that tell the bot is running
@@ -191,12 +226,12 @@ r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
 
 try:
     print "\tLogging in via " + loginType + "..."
-    loginInfo = retrieveLoginCredentials(loginType)
+    loginInfo = retrieve_login_credentials(loginType)
     r.login(loginInfo[0], loginInfo[1])
 
 except praw.errors:
     print "LOGIN FAILURE"
-    exitBot()
+    exit_bot()
 
 # read off /r/coys
 coys_subreddit = r.get_subreddit('coys')
@@ -211,7 +246,7 @@ allowedExtensions = [".gif"]
 # Check the db cache first
 print "\tChecking cache..."
 already_done = []
-if (os.path.isfile(dbFile)):
+if os.path.isfile(dbFile):
     f = open(dbFile, 'r+')
 
     # If the file isn't at its end or empty
@@ -228,11 +263,11 @@ counter = 0
 
 if cron:
     print "(Cron job)"
-    bot(spursgifs_subreddit)
+    bot()
 else:
     print "(Looping)"
     while True:
-        bot(spursgifs_subreddit)
+        bot()
         counter += 1
         print '(Looped - ' + str(counter) + ')'
         time.sleep(60)

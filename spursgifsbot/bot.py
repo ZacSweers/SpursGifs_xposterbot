@@ -162,6 +162,7 @@ def retrieveLoginCredentials(loginType):
         print "\tVals are " + os.environ['REDDIT_USERNAME'] + " - " + os.environ['REDDIT_PASSWORD']
         USERNAME = os.environ['REDDIT_USERNAME']
         PASSWORD = os.environ['REDDIT_PASSWORD']
+        loginInfo = []
         loginInfo.append(USERNAME)
         loginInfo.append(PASSWORD)
         print "\tVals are " + loginInfo[0] + " - " + loginInfo[1]

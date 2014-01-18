@@ -34,11 +34,9 @@ propsFile = "login.properties"
 fileOpened = False
 
 # subreddit to x-post to. Changes if testing
-global postSub
 postSub = "SpursGifs"
 
 # for cron jobs
-global cron
 cron = False
 
 

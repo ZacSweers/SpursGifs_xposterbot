@@ -3,9 +3,15 @@ SpursGifs_xposterbot
 
 Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/gyfcats from /r/coys to /r/SpursGifs.
 
-### TODO
+# Basic flow
+- Runs on Heroku, using the free scheduler. Checking once/hour for now.
+- Xposts to /r/SpursGifs (converts to gfycat first if it's a gif)
+- Comments on the new post giving credit to the OP
+- Comments on the original post linking the x-posted submission
+
+# TODO
 * Use a DB on heroku for caching there (local pickle file doesn't persist between runs)
-* Convert gifs to gfycat
+* ~~Convert gifs to gfycat~~ Done!
 
 
 ## License

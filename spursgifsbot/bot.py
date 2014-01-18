@@ -5,21 +5,21 @@ Based on what I learned creeping the source code for
 https://github.com/cris9696/PlayStoreLinks_Bot
 """
 
-import praw  		# reddit wrapper
-import time 		# obvious
-import pickle 		# dump list and dict to file
-import os  			# OS-related stuff
-import sys 			# ""
-import atexit 		# To handle unexpected crashes or just normal exiting
-import logging 		# logging
-import signal       # Catch SIGINT
+import praw        # reddit wrapper
+import time        # obvious
+import pickle      # dump list and dict to file
+import os          # OS-related stuff
+import sys         # ""
+import atexit      # To handle unexpected crashes or just normal exiting
+import logging     # logging
+import signal      # Catch SIGINT
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
-    " from /r/coys over to /r/SpursGifs.*\n\n*Feedback/bug reports? Send a" + \
-    " message to [pandanomic](http://www.reddit.com/message/compose?to=pan" + \
-    "danomic).*\n\n*[Source code](https://github.com/pandanomic/Spurs" + \
-    "Gifs_xposterbot)*"
+             " from /r/coys over to /r/SpursGifs.*\n\n*Feedback/bug reports? Send a" + \
+             " message to [pandanomic](http://www.reddit.com/message/compose?to=pan" + \
+             "danomic).*\n\n*[Source code](https://github.com/pandanomic/Spurs" + \
+             "Gifs_xposterbot)*"
 
 # DB for caching previous posts
 dbFile = "spursgifs_xposterDB"
@@ -50,8 +50,8 @@ def exit_handler():
 
 # Called on SIGINT
 def signal_handler(signal, frame):
-        print '\n(Caught SIGINT, exiting gracefully...)'
-        sys.exit()
+    print '\n(Caught SIGINT, exiting gracefully...)'
+    sys.exit()
 
 # Register the function that get called on exit
 atexit.register(exit_handler)
@@ -106,8 +106,8 @@ def extension(url):
 # Validates if a submission should be posted
 def validateSubmission(submission):
     if submission.id not in already_done and \
-        (submission.domain in allowedDomains or
-         extension(submission.url) in allowedExtensions):
+            (submission.domain in allowedDomains or
+                     extension(submission.url) in allowedExtensions):
         return True
     return False
 
@@ -118,9 +118,9 @@ def followupComment(submission, newSubmission):
     # user = r.get_redditor("spursgifs_xposterbot")
     # newSubmission = user.get_submitted(limit=1).next()
     followupCommentText = "Originally posted [here](" + \
-        submission.permalink + ") by /u/" + \
-        submission.author.name + \
-        ".\n\n"
+                          submission.permalink + ") by /u/" + \
+                          submission.author.name + \
+                          ".\n\n"
     followupCommentText += commentTag
 
     try:
@@ -164,7 +164,7 @@ def retrieveLoginCredentials(loginType):
 
 
 # If the bot is already running
-if(os.path.isfile('BotRunning')):
+if (os.path.isfile('BotRunning')):
     print("The bot is already running, shutting down")
     exitBot()
 
@@ -187,22 +187,22 @@ if len(args) > 1:
         loginType = "env"
     print "\t(Args: " + str(args[1:]) + ")"
 
-print "\tLogging in via " + loginType + "..."
-try:
-    loginInfo = retrieveLoginCredentials(loginType)
+r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
 
-    r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
+try:
+    print "\tLogging in via " + loginType + "..."
+    loginInfo = retrieveLoginCredentials(loginType)
     r.login(loginInfo[0], loginInfo[1])
 
-    # read off /r/coys
-    coys_subreddit = r.get_subreddit('coys')
-
-    # submit to /r/SpursGifs or /r/pandanomic_testing
-    spursgifs_subreddit = r.get_subreddit(postSub)
-
-except:
+except praw.errors:
     print "LOGIN FAILURE"
     exitBot()
+
+# read off /r/coys
+coys_subreddit = r.get_subreddit('coys')
+
+# submit to /r/SpursGifs or /r/pandanomic_testing
+spursgifs_subreddit = r.get_subreddit(postSub)
 
 allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com", "fitbamob.com"]
 allowedExtensions = [".gif"]
@@ -211,7 +211,7 @@ allowedExtensions = [".gif"]
 # Check the db cache first
 print "\tChecking cache..."
 already_done = []
-if(os.path.isfile(dbFile)):
+if (os.path.isfile(dbFile)):
     f = open(dbFile, 'r+')
 
     # If the file isn't at its end or empty

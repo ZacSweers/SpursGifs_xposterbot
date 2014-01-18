@@ -39,3 +39,7 @@ nosetests.xml
 login.properties
 spursgifs_xposterDB
 BotRunning
+
+# PyCharm
+*.xml
+*.iml

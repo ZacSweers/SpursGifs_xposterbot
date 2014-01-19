@@ -49,11 +49,15 @@ running_on_heroku = False
 if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
     # import bmemcached
     import pylibmc
+
     print '\tRunning on heroku, using memcached'
 
     running_on_heroku = True
-    mc = pylibmc.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                           os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+    # mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+    #                        os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+    mc = pylibmc.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS'),
+                        username=os.environ.get('MEMCACHEDCLOUD_USERNAME'),
+                        password=os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
 # Called when exiting the program

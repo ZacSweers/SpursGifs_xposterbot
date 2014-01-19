@@ -17,6 +17,7 @@ import random       # ""
 import requests     # For URL requests, ued in gfycat API
 import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
+# import pylibmc
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -48,6 +49,8 @@ running_on_heroku = False
 
 if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
     import bmemcached
+    # import pylibmc
+    print '\tRunning on heroku, using memcached'
 
     running_on_heroku = True
     mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
@@ -89,6 +92,8 @@ def bot():
             if running_on_heroku:
                 mc.set(str(submission.id), "True")
                 assert mc.get(str(submission.id)) == "True"
+                # mc[str(submission.id)] = "True"
+                # assert (str(submission.id)) in mc
             else:
                 already_done.append(submission.id)
             print "(New Post)"
@@ -128,6 +133,8 @@ def submit(subreddit, submission):
             if running_on_heroku:
                 mc.set(str(new_submission.id), "True")
                 assert mc.get(str(new_submission.id)) == "True"
+                # mc[str(new_submission.id)] = "True"
+                # assert (str(new_submission.id)) in mc
             else:
                 already_done.append(new_submission.id)
 
@@ -135,11 +142,18 @@ def submit(subreddit, submission):
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
-        if submission.id not in already_done:
-            already_done.append(submission.id)
+        if running_on_heroku:
+            mc.set(str(submission.id), "True")
+            assert mc.get(str(submission.id)) == "True"
+        else:
+            if submission.id not in already_done:
+                already_done.append(submission.id)
     except praw.errors.RateLimitExceeded:
         print "\t--Rate Limit Exceeded"
-        already_done.remove(submission.id)
+        if running_on_heroku:
+            mc.delete(str(submission.id))
+        else:
+            already_done.remove(submission.id)
     except praw.errors.APIException:
         logging.exception("Error on link submission.")
 

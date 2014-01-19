@@ -16,6 +16,7 @@ import string       # Used in generating random strings
 import random       # ""
 import requests     # For URL requests, ued in gfycat API
 import urllib       # For encoding urls
+import subprocess   # To send shell commands, used for local testing
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -38,6 +39,9 @@ postSub = "SpursGifs"
 
 # for cron jobs
 cron = False
+
+# for my mac, I use terminal-notifier to get updates
+macUpdate = False
 
 
 # Called when exiting the program
@@ -82,19 +86,30 @@ def bot():
 
 # Submission
 def submit(subreddit, submission):
+
+    if macUpdate:
+        print '\tNotifying on Mac'
+        try:
+            subprocess.call(["terminal-notifier", "-message", "New post", "-title", "Spurs Gif Bot", "-sound", "default"])
+        except OSError:
+            print '\t--Could not find terminal-notifier, please reinstall'
+
     url_to_submit = submission.url
+
+    gfy_converted = False
 
     # Convert if it's a gif
     if extension(submission.url) == ".gif":
         new_url_to_submit = gfycat_convert(url_to_submit)
         if new_url_to_submit != "Error":
             url_to_submit = new_url_to_submit
+            gfy_converted = True
 
     print "\tSubmitting to /r/" + postSub + "..."
     try:
         new_submission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=url_to_submit)
-        followup_comment(submission, new_submission)
+        followup_comment(submission, new_submission, gfy_converted)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
@@ -122,7 +137,7 @@ def validate_submission(submission):
 
 
 # Followup Comment
-def followup_comment(submission, new_submission):
+def followup_comment(submission, new_submission, gfy_converted):
     print("\tFollowup Comment...")
     # user = r.get_redditor("spursgifs_xposterbot")
     # new_submission = user.get_submitted(limit=1).next()
@@ -134,7 +149,7 @@ def followup_comment(submission, new_submission):
 
     try:
         new_submission.add_comment(followup_comment_text)
-        notify_comment(new_submission.permalink, submission)
+        notify_comment(new_submission.permalink, submission, gfy_converted)
     except praw.errors.RateLimitExceeded:
         print "\t--Rate Limit Exceeded"
     except praw.errors.APIException:
@@ -142,10 +157,13 @@ def followup_comment(submission, new_submission):
 
 
 # Notifying comment
-def notify_comment(new_url, submission):
+def notify_comment(new_url, submission, gfy_converted):
     print("\tNotify Comment...")
     notify_comment_text = "X-posted to [here](" + new_url + ").\n\n"
     notify_comment_text += commentTag
+
+    if gfy_converted:
+        notify_comment_text = "Converted to gfycat and x" + notify_comment_text[1::]
 
     try:
         submission.add_comment(notify_comment_text)
@@ -207,6 +225,8 @@ open('BotRunning', 'w').close()
 
 print "(Starting Bot)"
 
+print "(OS is " + sys.platform + ")"
+
 args = sys.argv
 loginType = "propFile"
 
@@ -218,6 +238,8 @@ if len(args) > 1:
         cron = True
     if "--env" in args:
         loginType = "env"
+    if "--notify" in args and sys.platform == "darwin":
+        macUpdate = True
     print "\t(Args: " + str(args[1:]) + ")"
 
 r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')

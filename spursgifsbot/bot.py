@@ -152,7 +152,7 @@ def validate_submission(submission):
     # check domain and extension validity
     if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
         # Running on heroku, check the memcache
-        if running_on_heroku and mc.get(submission.id) != "True":
+        if running_on_heroku and not mc.get(submission.id):
             return True
         if submission.id not in already_done:
             return True

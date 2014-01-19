@@ -17,7 +17,6 @@ import random       # ""
 import requests     # For URL requests, ued in gfycat API
 import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
-# import pylibmc
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -48,12 +47,12 @@ macUpdate = False
 running_on_heroku = False
 
 if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
-    import bmemcached
-    # import pylibmc
+    # import bmemcached
+    import pylibmc
     print '\tRunning on heroku, using memcached'
 
     running_on_heroku = True
-    mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+    mc = pylibmc.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
                            os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
@@ -90,10 +89,10 @@ def bot():
     for submission in coys_subreddit.get_new(limit=30):
         if validate_submission(submission):
             if running_on_heroku:
-                mc.set(str(submission.id), "True")
-                assert mc.get(str(submission.id)) == "True"
-                # mc[str(submission.id)] = "True"
-                # assert (str(submission.id)) in mc
+                # mc.set(str(submission.id), "True")
+                # assert mc.get(str(submission.id)) == "True"
+                mc[str(submission.id)] = "True"
+                assert (str(submission.id)) in mc
             else:
                 already_done.append(submission.id)
             print "(New Post)"
@@ -131,10 +130,10 @@ def submit(subreddit, submission):
 
         if gfy_converted:
             if running_on_heroku:
-                mc.set(str(new_submission.id), "True")
-                assert mc.get(str(new_submission.id)) == "True"
-                # mc[str(new_submission.id)] = "True"
-                # assert (str(new_submission.id)) in mc
+                # mc.set(str(new_submission.id), "True")
+                # assert mc.get(str(new_submission.id)) == "True"
+                mc[str(new_submission.id)] = "True"
+                assert (str(new_submission.id)) in mc
             else:
                 already_done.append(new_submission.id)
 
@@ -143,15 +142,18 @@ def submit(subreddit, submission):
         # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
         if running_on_heroku:
-            mc.set(str(submission.id), "True")
-            assert mc.get(str(submission.id)) == "True"
+            # mc.set(str(submission.id), "True")
+            # assert mc.get(str(submission.id)) == "True"
+            mc[str(submission.id)] = "True"
+            assert (str(submission.id)) in mc
         else:
             if submission.id not in already_done:
                 already_done.append(submission.id)
     except praw.errors.RateLimitExceeded:
         print "\t--Rate Limit Exceeded"
         if running_on_heroku:
-            mc.delete(str(submission.id))
+            # mc.delete(str(submission.id))
+            del mc[str(submission.id)]
         else:
             already_done.remove(submission.id)
     except praw.errors.APIException:
@@ -169,8 +171,10 @@ def validate_submission(submission):
     if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
         # Running on heroku, check the memcache
         if running_on_heroku:
-            obj = mc.get(str(submission.id))
-            if not obj:
+            # obj = mc.get(str(submission.id))
+            # if not obj:
+            #     return True
+            if str(submission.id) not in mc:
                 return True
         if submission.id not in already_done:
             return True

@@ -43,6 +43,16 @@ cron = False
 # for my mac, I use terminal-notifier to get updates
 macUpdate = False
 
+# for keeping track of if we're on Heroku
+running_on_heroku = False
+
+if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
+    import bmemcached
+
+    running_on_heroku = True
+    mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
+                           os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+
 
 # Called when exiting the program
 def exit_handler():
@@ -76,7 +86,10 @@ def bot():
     new_count = 0
     for submission in coys_subreddit.get_new(limit=30):
         if validate_submission(submission):
-            already_done.append(submission.id)
+            if running_on_heroku:
+                mc.set(submission.id, True)
+            else:
+                already_done.append(submission.id)
             print "(New Post)"
             submit(spursgifs_subreddit, submission)
 
@@ -86,11 +99,11 @@ def bot():
 
 # Submission
 def submit(subreddit, submission):
-
     if macUpdate:
         print '\tNotifying on Mac'
         try:
-            subprocess.call(["terminal-notifier", "-message", "New post", "-title", "Spurs Gif Bot", "-sound", "default"])
+            subprocess.call(
+                ["terminal-notifier", "-message", "New post", "-title", "Spurs Gif Bot", "-sound", "default"])
         except OSError:
             print '\t--Could not find terminal-notifier, please reinstall'
 
@@ -109,6 +122,13 @@ def submit(subreddit, submission):
     try:
         new_submission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=url_to_submit)
+
+        if gfy_converted:
+            if running_on_heroku:
+                mc.set(new_submission.id, True)
+            else:
+                already_done.append(new_submission.id)
+
         followup_comment(submission, new_submission, gfy_converted)
     except praw.errors.AlreadySubmitted:
         # logging.exception("Already submitted")
@@ -129,10 +149,13 @@ def extension(url):
 
 # Validates if a submission should be posted
 def validate_submission(submission):
-    if submission.id not in already_done and \
-            (submission.domain in allowedDomains or
-             extension(submission.url) in allowedExtensions):
-        return True
+    # check domain and extension validity
+    if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
+        # Running on heroku, check the memcache
+        if running_on_heroku and mc.get(submission.id):
+            return True
+        if submission.id not in already_done:
+            return True
     return False
 
 
@@ -264,18 +287,19 @@ allowedExtensions = [".gif"]
 
 # Array with previously linked posts
 # Check the db cache first
-print "\tChecking cache..."
-already_done = []
-if os.path.isfile(dbFile):
-    f = open(dbFile, 'r+')
+if not running_on_heroku:
+    print "\tChecking cache..."
+    already_done = []
+    if os.path.isfile(dbFile):
+        f = open(dbFile, 'r+')
 
-    # If the file isn't at its end or empty
-    if f.tell() != os.fstat(f.fileno()).st_size:
-        already_done = pickle.load(f)
-    f.close()
-f = open(dbFile, 'w+')
+        # If the file isn't at its end or empty
+        if f.tell() != os.fstat(f.fileno()).st_size:
+            already_done = pickle.load(f)
+        f.close()
+    f = open(dbFile, 'w+')
 
-print '(Cache size: ' + str(len(already_done)) + ")"
+    print '(Cache size: ' + str(len(already_done)) + ")"
 
 fileOpened = True
 

@@ -57,7 +57,7 @@ if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
 # Called when exiting the program
 def exit_handler():
     print "(SHUTTING DOWN)"
-    if fileOpened:
+    if not running_on_heroku and fileOpened:
         pickle.dump(already_done, f)
         f.close()
     os.remove("BotRunning")
@@ -87,7 +87,7 @@ def bot():
     for submission in coys_subreddit.get_new(limit=30):
         if validate_submission(submission):
             if running_on_heroku:
-                mc.set(submission.id, True)
+                mc.set(submission.id, "True")
             else:
                 already_done.append(submission.id)
             print "(New Post)"
@@ -125,7 +125,7 @@ def submit(subreddit, submission):
 
         if gfy_converted:
             if running_on_heroku:
-                mc.set(new_submission.id, True)
+                mc.set(new_submission.id, "True")
             else:
                 already_done.append(new_submission.id)
 
@@ -152,7 +152,7 @@ def validate_submission(submission):
     # check domain and extension validity
     if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
         # Running on heroku, check the memcache
-        if running_on_heroku and mc.get(submission.id):
+        if running_on_heroku and mc.get(submission.id) != "True":
             return True
         if submission.id not in already_done:
             return True
@@ -287,9 +287,9 @@ allowedExtensions = [".gif"]
 
 # Array with previously linked posts
 # Check the db cache first
+already_done = []
 if not running_on_heroku:
     print "\tChecking cache..."
-    already_done = []
     if os.path.isfile(dbFile):
         f = open(dbFile, 'r+')
 

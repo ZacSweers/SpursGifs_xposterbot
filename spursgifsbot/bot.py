@@ -100,6 +100,7 @@ def bot():
                 # assert (str(submission.id)) in mc
             else:
                 already_done.append(submission.id)
+
             print "(New Post)"
             submit(spursgifs_subreddit, submission)
 
@@ -181,9 +182,12 @@ def validate_submission(submission):
         if running_on_heroku:
             print '\tChecking cache for ' + str(submission.id)
             obj = mc.get(str(submission.id))
-            if not obj:
+            if not obj or obj != "True":
                 print '\t--id not present'
                 return True
+            else:
+                print '\t--cached, skipping'
+                return False
             # if str(submission.id) not in mc:
             #     return True
         if submission.id not in already_done:

@@ -48,16 +48,12 @@ running_on_heroku = False
 
 if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
     import bmemcached
-    # import pylibmc
 
     print '\tRunning on heroku, using memcached'
 
     running_on_heroku = True
     mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
                            os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
-    # mc = pylibmc.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS'),
-    #                     username=os.environ.get('MEMCACHEDCLOUD_USERNAME'),
-    #                     password=os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
 # Called when exiting the program
@@ -96,8 +92,6 @@ def bot():
                 mc.set(str(submission.id), "True")
                 assert str(mc.get(str(submission.id))) == "True"
                 print '\tCached ' + str(submission.id) + ': ' + str(mc.get(str(submission.id)))
-                # mc[str(submission.id)] = "True"
-                # assert (str(submission.id)) in mc
             else:
                 already_done.append(submission.id)
 
@@ -139,8 +133,6 @@ def submit(subreddit, submission):
                 mc.set(str(new_submission.id), "True")
                 assert str(mc.get(str(new_submission.id))) == "True"
                 print '\tCached ' + str(new_submission.id) + ': ' + str(mc.get(str(new_submission.id)))
-                # mc[str(new_submission.id)] = "True"
-                # assert (str(new_submission.id)) in mc
             else:
                 already_done.append(new_submission.id)
 
@@ -152,8 +144,6 @@ def submit(subreddit, submission):
             mc.set(str(submission.id), "True")
             assert str(mc.get(str(submission.id))) == "True"
             print '\tCached ' + str(submission.id) + ': ' + str(mc.get(str(submission.id)))
-            # mc[str(submission.id)] = "True"
-            # assert (str(submission.id)) in mc
         else:
             if submission.id not in already_done:
                 already_done.append(submission.id)
@@ -162,7 +152,6 @@ def submit(subreddit, submission):
         if running_on_heroku:
             mc.delete(str(submission.id))
             print '\tDeleted ' + str(submission.id)
-            # del mc[str(submission.id)]
         else:
             already_done.remove(submission.id)
     except praw.errors.APIException:
@@ -188,8 +177,6 @@ def validate_submission(submission):
             else:
                 print '\t--cached, skipping'
                 return False
-            # if str(submission.id) not in mc:
-            #     return True
         if submission.id not in already_done:
             return True
     return False
@@ -198,8 +185,6 @@ def validate_submission(submission):
 # Followup Comment
 def followup_comment(submission, new_submission, gfy_converted):
     print("\tFollowup Comment...")
-    # user = r.get_redditor("spursgifs_xposterbot")
-    # new_submission = user.get_submitted(limit=1).next()
     followup_comment_text = "Originally posted [here](" + \
                             submission.permalink + ") by /u/" + \
                             submission.author.name + \

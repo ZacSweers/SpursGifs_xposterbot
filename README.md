@@ -10,7 +10,7 @@ Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/
 - Comments on the original post linking the x-posted submission
 
 # TODO
-* Use a DB on heroku for caching there (local pickle file doesn't persist between runs)
+* ~~Use a DB on heroku for caching there (local pickle file doesn't persist between runs)~~ Done!
 * ~~Convert gifs to gfycat~~ Done!
 
 

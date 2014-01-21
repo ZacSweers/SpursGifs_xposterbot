@@ -4,7 +4,6 @@
 Based on what I learned creeping the source code for
 https://github.com/cris9696/PlayStoreLinks_Bot
 """
-import praw         # reddit wrapper
 import time         # obvious
 import pickle       # dump list and dict to file
 import os           # OS-related stuff
@@ -14,9 +13,11 @@ import logging      # logging
 import signal       # Catch SIGINT
 import string       # Used in generating random strings
 import random       # ""
-import requests     # For URL requests, ued in gfycat API
 import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
+import praw         # reddit wrapper
+import requests     # For URL requests, ued in gfycat API
+
 
 # tagline
 commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
@@ -66,8 +67,9 @@ def exit_handler():
 
 
 # Called on SIGINT
-def signal_handler(signal, frame):
-    print '\n(Caught SIGINT, exiting gracefully...)'
+# noinspection PyUnusedLocal
+def signal_handler(input_signal, frame):
+    print '\n(Caught SIGINT, exiting gracefully)'
     sys.exit()
 
 # Register the function that get called on exit
@@ -82,18 +84,51 @@ def exit_bot():
     sys.exit()
 
 
+# Check cache for string
+def check_cache(input_key):
+    print '\tChecking cache for ' + str(input_key)
+    if running_on_heroku:
+        obj = mc.get(str(input_key))
+        if not obj or obj != "True":
+            return False
+        else:
+            return True
+    if input_key in already_done:
+        return True
+    return False
+
+
+# Cache a key (original url, gfy url, or submission id)
+def cache_key(input_key):
+    if running_on_heroku:
+        mc.set(str(input_key), "True")
+        assert str(mc.get(str(input_key))) == "True"
+    else:
+        already_done.append(input_key)
+
+    print '\tCached ' + str(input_key)
+
+
+# Remove an item from caching
+def cache_remove_key(input_submission):
+    print "\t--Rate Limit Exceeded"
+    if running_on_heroku:
+        mc.delete(str(input_submission.id))
+        mc.delete(str(input_submission.url))
+    else:
+        already_done.remove(input_submission.id)
+        already_done.remove(input_submission.url)
+
+    print '\tDeleted ' + str(input_submission.id)
+
+
 # Main bot runner
 def bot():
     print "(Parsing new 30)"
     new_count = 0
     for submission in coys_subreddit.get_new(limit=30):
         if validate_submission(submission):
-            if running_on_heroku:
-                mc.set(str(submission.id), "True")
-                assert str(mc.get(str(submission.id))) == "True"
-                print '\tCached ' + str(submission.id) + ': ' + str(mc.get(str(submission.id)))
-            else:
-                already_done.append(submission.id)
+            new_count += 1
 
             print "(New Post)"
             submit(spursgifs_subreddit, submission)
@@ -113,13 +148,14 @@ def submit(subreddit, submission):
             print '\t--Could not find terminal-notifier, please reinstall'
 
     url_to_submit = submission.url
-
     gfy_converted = False
 
     # Convert if it's a gif
     if extension(submission.url) == ".gif":
         new_url_to_submit = gfycat_convert(url_to_submit)
         if new_url_to_submit != "Error":
+            # Cache the new gfy url and submit it instead
+            cache_key(new_url_to_submit)
             url_to_submit = new_url_to_submit
             gfy_converted = True
 
@@ -128,32 +164,21 @@ def submit(subreddit, submission):
         new_submission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=url_to_submit)
 
-        if gfy_converted:
-            if running_on_heroku:
-                mc.set(str(new_submission.id), "True")
-                assert str(mc.get(str(new_submission.id))) == "True"
-                print '\tCached ' + str(new_submission.id) + ': ' + str(mc.get(str(new_submission.id)))
-            else:
-                already_done.append(new_submission.id)
+        # Cache on successful submission
+        cache_key(submission.id)
+        cache_key(submission.url)
 
         followup_comment(submission, new_submission, gfy_converted)
+
     except praw.errors.AlreadySubmitted:
-        # logging.exception("Already submitted")
         print "\t--Already submitted, caching"
-        if running_on_heroku:
-            mc.set(str(submission.id), "True")
-            assert str(mc.get(str(submission.id))) == "True"
-            print '\tCached ' + str(submission.id) + ': ' + str(mc.get(str(submission.id)))
-        else:
-            if submission.id not in already_done:
-                already_done.append(submission.id)
+        # Cache stuff
+        cache_key(submission.id)
+        cache_key(submission.url)
+
     except praw.errors.RateLimitExceeded:
-        print "\t--Rate Limit Exceeded"
-        if running_on_heroku:
-            mc.delete(str(submission.id))
-            print '\tDeleted ' + str(submission.id)
-        else:
-            already_done.remove(submission.id)
+        cache_remove_key(submission)
+
     except praw.errors.APIException:
         logging.exception("Error on link submission.")
 
@@ -167,18 +192,8 @@ def extension(url):
 def validate_submission(submission):
     # check domain and extension validity
     if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
-        # Running on heroku, check the memcache
-        if running_on_heroku:
-            print '\tChecking cache for ' + str(submission.id)
-            obj = mc.get(str(submission.id))
-            if not obj or obj != "True":
-                print '\t--id not present'
-                return True
-            else:
-                print '\t--cached, skipping'
-                return False
-        if submission.id not in already_done:
-            return True
+        # Check for submission id and url
+        return not (check_cache(submission.id) or check_cache(submission.url))
     return False
 
 
@@ -322,6 +337,7 @@ if not running_on_heroku:
 
     print '(Cache size: ' + str(len(already_done)) + ")"
 
+# noinspection PyRedeclaration
 fileOpened = True
 
 counter = 0

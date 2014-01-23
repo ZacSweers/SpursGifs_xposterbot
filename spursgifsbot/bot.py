@@ -20,11 +20,13 @@ import requests     # For URL requests, ued in gfycat API
 
 
 # tagline
-commentTag = "------\n\n*Hi! I'm a bot created to x-post gifs/vines/gfycats" + \
-             " from /r/coys over to /r/SpursGifs.*\n\n*Feedback/bug reports? Send a" + \
-             " message to [pandanomic](http://www.reddit.com/message/compose?to=pan" + \
-             "danomic).*\n\n*[Source code](https://github.com/pandanomic/Spurs" + \
-             "Gifs_xposterbot)*"
+commentTag = """------
+
+*Hi! I'm a bot created to x-post gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*
+
+*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*
+
+*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"""
 
 # DB for caching previous posts
 dbFile = "spursgifs_xposterDB"
@@ -54,7 +56,8 @@ if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
 
     running_on_heroku = True
     mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                           os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+                           os.environ.get('MEMCACHEDCLOUD_USERNAME'),
+                           os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
 
 # Called when exiting the program
@@ -143,7 +146,8 @@ def submit(subreddit, submission):
         print '\tNotifying on Mac'
         try:
             subprocess.call(
-                ["terminal-notifier", "-message", "New post", "-title", "Spurs Gif Bot", "-sound", "default"])
+                ["terminal-notifier", "-message", "New post", "-title",
+                 "Spurs Gif Bot", "-sound", "default"])
         except OSError:
             print '\t--Could not find terminal-notifier, please reinstall'
 
@@ -191,7 +195,8 @@ def extension(url):
 # Validates if a submission should be posted
 def validate_submission(submission):
     # check domain and extension validity
-    if submission.domain in allowedDomains or extension(submission.url) in allowedExtensions:
+    if submission.domain in allowedDomains or extension(
+            submission.url) in allowedExtensions:
         # Check for submission id and url
         return not (check_cache(submission.id) or check_cache(submission.url))
     return False
@@ -222,7 +227,8 @@ def notify_comment(new_url, submission, gfy_converted):
     notify_comment_text += commentTag
 
     if gfy_converted:
-        notify_comment_text = "Converted to gfycat and x" + notify_comment_text[1::]
+        notify_comment_text = "Converted to gfycat and x" + \
+                              notify_comment_text[1::]
 
     try:
         submission.add_comment(notify_comment_text)
@@ -245,7 +251,8 @@ def retrieve_login_credentials(login_type):
         return login_info
     if login_type == "env":
         print "\t--Reading env variables"
-        login_info = [os.environ['REDDIT_USERNAME'], os.environ['REDDIT_PASSWORD']]
+        login_info = [os.environ['REDDIT_USERNAME'],
+                      os.environ['REDDIT_PASSWORD']]
         return login_info
 
 
@@ -261,7 +268,8 @@ def gfycat_convert(url_to_convert):
     encoded_url = urllib.quote(url_to_convert, '')
 
     # Convert
-    url_string = 'http://upload.gfycat.com/transcode/' + gen_random_string() + '?fetchUrl=' + encoded_url
+    url_string = 'http://upload.gfycat.com/transcode/' + gen_random_string() + \
+                 '?fetchUrl=' + encoded_url
     conversion_response = requests.get(url_string)
     if conversion_response.status_code == 200:
         print '\t--success'

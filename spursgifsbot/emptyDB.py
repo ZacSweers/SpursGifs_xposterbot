@@ -6,18 +6,15 @@ import os  			# OS-related stuff
 
 def opendb(db_file):
     if os.path.isfile(db_file):
-        f = open(db_file, 'r+')
-
+        with open(db_file, 'r+') as f:
         # If the file isn't at its end or empty
         if f.tell() != os.fstat(f.fileno()).st_size:
             return pickle.load(f)
-        f.close()
 
 
 def savedb(db_file, data):
-    f = open(db_file, 'w+')
-    pickle.dump(data, f)
-    f.close()
+    with open(db_file, 'w+') as f:
+        pickle.dump(data, f)
 
 
 print "(Cleaning Cache)"

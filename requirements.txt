@@ -1,3 +1,4 @@
 praw==2.1.12
 requests==2.2.0
 python-binary-memcached==0.21
+pyquery==1.2.8

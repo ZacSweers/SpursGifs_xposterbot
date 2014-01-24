@@ -17,6 +17,7 @@ import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
 import praw         # reddit wrapper
 import requests     # For URL requests, ued in gfycat API
+from pyquery        # For parsing vine html
 
 
 # tagline
@@ -155,7 +156,11 @@ def submit(subreddit, submission):
     gfy_converted = False
 
     # Convert if it's a gif
-    if extension(submission.url) == ".gif":
+    if extension(submission.url) == ".gif" or submission.domain == 'vine.co':
+
+        if submission.domain == 'vine.co':
+            url_to_submit = retrieve_vine_video_url(url_to_submit)
+
         new_url_to_submit = gfycat_convert(url_to_submit)
         if new_url_to_submit != "Error":
             # Cache the new gfy url and submit it instead
@@ -260,6 +265,15 @@ def retrieve_login_credentials(login_type):
 # Borrowed from here: http://stackoverflow.com/a/16962716/3034339
 def gen_random_string():
     return ''.join(random.sample(string.letters * 10, 10))
+
+
+# Returns the .mp4 url of a vine video
+def retrieve_vine_video_url(vine_url):
+    print '\tConverting vine to gfycat'
+    d = pyquery.PyQuery(url=url)
+    video_url = d("meta[property=twitter\\:player\\:stream]").attr['content']
+    video_url = video_url.partition("?")[0]
+    return video_url
 
 
 # Convert gifs to gfycat

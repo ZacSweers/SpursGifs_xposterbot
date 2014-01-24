@@ -13,7 +13,8 @@ Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/
 * ~~Use a DB on heroku for caching there (local pickle file doesn't persist between runs)~~ Done!
 * ~~Convert gifs to gfycat~~ Done!
 * ~~Cache previously gfycat'd urls.~~ Done!
-* Use gfycat's API for checking to see if a gif was already converted. Minor, and I think their API already does this server-side
+* ~~Use gfycat's API for checking to see if a gif was already converted. Minor, and I think their API already does this server-side~~ Not necessary, they handle this already.
+* ~~Convert Vine videos to gfycat (for consistency/convenience)~~ Done!
 
 
 ## License

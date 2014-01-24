@@ -7,9 +7,9 @@ import os  			# OS-related stuff
 def opendb(db_file):
     if os.path.isfile(db_file):
         with open(db_file, 'r+') as f:
-        # If the file isn't at its end or empty
-        if f.tell() != os.fstat(f.fileno()).st_size:
-            return pickle.load(f)
+            # If the file isn't at its end or empty
+            if f.tell() != os.fstat(f.fileno()).st_size:
+                return pickle.load(f)
 
 
 def savedb(db_file, data):

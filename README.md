@@ -1,11 +1,11 @@
 SpursGifs_xposterbot
 ====================
 
-Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/gyfcats from /r/coys to /r/SpursGifs.
+Reddit bot I started writing while sitting bored in a hotel room for x-posting gifs/vines/gyfcats from /r/coys to /r/SpursGifs.
 
 # Basic flow
 - Runs on Heroku, using the free scheduler. Checking once/hour for now.
-- Xposts to /r/SpursGifs (converts to gfycat first if it's a gif)
+- Xposts to /r/SpursGifs (converts to gfycat first if it's a gif or vine)
 - Comments on the new post giving credit to the OP
 - Comments on the original post linking the x-posted submission
 
@@ -13,7 +13,7 @@ Reddit bot I wrote while sitting bored in a hotel room for x-posting gifs/vines/
 * ~~Use a DB on heroku for caching there (local pickle file doesn't persist between runs)~~ Done!
 * ~~Convert gifs to gfycat~~ Done!
 * ~~Cache previously gfycat'd urls.~~ Done!
-* ~~Use gfycat's API for checking to see if a gif was already converted. Minor, and I think their API already does this server-side~~ Not necessary, they handle this already.
+* ~~Use gfycat's API for checking to see if a gif was already converted. Minor, and I think their API already does this server-side~~ Not necessary, they handle this already internally.
 * ~~Convert Vine videos to gfycat (for consistency/convenience)~~ Done!
 
 

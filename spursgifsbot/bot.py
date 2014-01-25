@@ -70,7 +70,7 @@ def log(message, *colorargs):
 
 # Called when exiting the program
 def exit_handler():
-    log("(SHUTTING DOWN)", Color.BOLD)
+    log("SHUTTING DOWN", Color.BOLD)
     if not running_on_heroku:
         with open(cache_file, 'r+') as db_file_save:
             pickle.dump(already_done, db_file_save)
@@ -80,7 +80,7 @@ def exit_handler():
 # Called on SIGINT
 # noinspection PyUnusedLocal
 def signal_handler(input_signal, frame):
-    log('\n(Caught SIGINT, exiting gracefully)', Color.RED)
+    log('\nCaught SIGINT, exiting gracefully', Color.RED)
     sys.exit()
 
 
@@ -130,20 +130,20 @@ def cache_remove_key(input_submission):
 
 # Main bot runner
 def bot():
-    log("(Parsing new 30)")
+    log("Parsing new 30", Color.BLUE)
     new_count = 0
     for submission in coys_subreddit.get_new(limit=30):
         if not check_cache(submission.id):
             if validate_submission(submission):
                 new_count += 1
 
-                log("(New Post)", Color.GREEN)
+                log("New Post", Color.GREEN)
                 submit(spursgifs_subreddit, submission)
             else:
                 cache_key(submission.id)
 
     if new_count == 0:
-        log("(Nothing new)", Color.BOLD)
+        log("Nothing new", Color.BLUE)
 
 
 # Submission
@@ -343,7 +343,7 @@ if __name__ == "__main__":
             postSub = "pandanomic_testing"
         if "--notify" in args and sys.platform == "darwin":
             macUpdate = True
-        log("--(Args: " + str(args[1:]) + ")", Color.BOLD)
+        log("--Args: " + str(args[1:]), Color.BOLD)
 
     r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
 

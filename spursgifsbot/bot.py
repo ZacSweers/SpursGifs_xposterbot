@@ -17,20 +17,35 @@ import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
 import praw         # reddit wrapper
 import requests     # For URL requests, ued in gfycat API
-import pyquery        # For parsing vine html
+import pyquery      # For parsing vine html
+
+
+# Color class, used for colors in terminal
+class Color:
+    PURPLE = '\033[95m'
+    CYAN = '\033[96m'
+    DARKCYAN = '\033[36m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    END = '\033[0m'
 
 
 # tagline
 commentTag = """------
 
-*Hi! I'm a bot created to x-post gifs/vines/gfycats from /r/coys over to /r/SpursGifs.*
+*Hi! I'm a bot created to x-post gifs/vines/gfycats to /r/SpursGifs.*
 
-*Feedback/bug reports? Send a message to [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*
+*Feedback/bug reports? Send a message to
+[pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*
 
 *[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"""
 
 # DB for caching previous posts
-dbFile = "spursgifs_xposterDB"
+cache_file = "spursgifs_xposterDB"
 
 # File with login credentials
 propsFile = "login.properties"
@@ -38,31 +53,26 @@ propsFile = "login.properties"
 # subreddit to x-post to. Changes if testing
 postSub = "SpursGifs"
 
-# for cron jobs
-cron = False
-
 # for my mac, I use terminal-notifier to get updates
 macUpdate = False
 
 # for keeping track of if we're on Heroku
 running_on_heroku = False
 
-if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
-    import bmemcached
 
-    print '\tRunning on heroku, using memcached'
-
-    running_on_heroku = True
-    mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','),
-                           os.environ.get('MEMCACHEDCLOUD_USERNAME'),
-                           os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+# Log method. If there's a color argument, it'll stick that in first
+def log(message, *colorargs):
+    if len(colorargs) > 0:
+        print colorargs[0] + message + Color.END
+    else:
+        print message
 
 
 # Called when exiting the program
 def exit_handler():
-    print "(SHUTTING DOWN)"
+    log("(SHUTTING DOWN)", Color.BOLD)
     if not running_on_heroku:
-        with open(dbFile, 'r+') as db_file_save:
+        with open(cache_file, 'r+') as db_file_save:
             pickle.dump(already_done, db_file_save)
     os.remove("BotRunning")
 
@@ -70,14 +80,8 @@ def exit_handler():
 # Called on SIGINT
 # noinspection PyUnusedLocal
 def signal_handler(input_signal, frame):
-    print '\n(Caught SIGINT, exiting gracefully)'
+    log('\n(Caught SIGINT, exiting gracefully)', Color.RED)
     sys.exit()
-
-# Register the function that get called on exit
-atexit.register(exit_handler)
-
-# Register function to call on SIGINT
-signal.signal(signal.SIGINT, signal_handler)
 
 
 # Function to exit the bot
@@ -87,15 +91,16 @@ def exit_bot():
 
 # Check cache for string
 def check_cache(input_key):
-    print '\tChecking cache for ' + str(input_key)
+    log('--Checking cache for ' + str(input_key))
     if running_on_heroku:
         obj = mc.get(str(input_key))
         if not obj or obj != "True":
             return False
         else:
             return True
-    if input_key in already_done:
-        return True
+    else:
+        if input_key in already_done:
+            return True
     return False
 
 
@@ -107,12 +112,12 @@ def cache_key(input_key):
     else:
         already_done.append(input_key)
 
-    print '\tCached ' + str(input_key)
+    log('--Cached ' + str(input_key), Color.GREEN)
 
 
 # Remove an item from caching
 def cache_remove_key(input_submission):
-    print "\t--Rate Limit Exceeded"
+    log("--Removing from cache", Color.RED)
     if running_on_heroku:
         mc.delete(str(input_submission.id))
         mc.delete(str(input_submission.url))
@@ -120,34 +125,37 @@ def cache_remove_key(input_submission):
         already_done.remove(input_submission.id)
         already_done.remove(input_submission.url)
 
-    print '\tDeleted ' + str(input_submission.id)
+    log('--Deleted ' + str(input_submission.id), Color.RED)
 
 
 # Main bot runner
 def bot():
-    print "(Parsing new 30)"
+    log("(Parsing new 30)")
     new_count = 0
     for submission in coys_subreddit.get_new(limit=30):
-        if validate_submission(submission):
-            new_count += 1
+        if not check_cache(submission.id):
+            if validate_submission(submission):
+                new_count += 1
 
-            print "(New Post)"
-            submit(spursgifs_subreddit, submission)
+                log("(New Post)", Color.GREEN)
+                submit(spursgifs_subreddit, submission)
+            else:
+                cache_key(submission.id)
 
     if new_count == 0:
-        print "(Nothing new)"
+        log("(Nothing new)", Color.BOLD)
 
 
 # Submission
 def submit(subreddit, submission):
     if macUpdate:
-        print '\tNotifying on Mac'
+        log('Notifying on Mac', Color.BOLD)
         try:
             subprocess.call(
                 ["terminal-notifier", "-message", "New post", "-title",
                  "Spurs Gif Bot", "-sound", "default"])
         except OSError:
-            print '\t--Could not find terminal-notifier, please reinstall'
+            log('--Could not find terminal-notifier, please reinstall', Color.RED)
 
     url_to_submit = submission.url
     gfy_converted = False
@@ -165,7 +173,7 @@ def submit(subreddit, submission):
             url_to_submit = new_url_to_submit
             gfy_converted = True
 
-    print "\tSubmitting to /r/" + postSub + "..."
+    log("--Submitting to /r/" + postSub)
     try:
         new_submission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=url_to_submit)
@@ -177,15 +185,17 @@ def submit(subreddit, submission):
         followup_comment(submission, new_submission, gfy_converted)
 
     except praw.errors.AlreadySubmitted:
-        print "\t--Already submitted, caching"
+        log("----Already submitted, caching", Color.RED)
         # Cache stuff
         cache_key(submission.id)
         cache_key(submission.url)
 
     except praw.errors.RateLimitExceeded:
+        log('--Rate limit exceeded', Color.RED)
         cache_remove_key(submission)
 
     except praw.errors.APIException:
+        log('--API exception', Color.RED)
         logging.exception("Error on link submission.")
 
 
@@ -206,7 +216,7 @@ def validate_submission(submission):
 
 # Followup Comment
 def followup_comment(submission, new_submission, gfy_converted):
-    print("\tFollowup Comment...")
+    log("--Followup Comment")
     followup_comment_text = "Originally posted [here](" + \
                             submission.permalink + ") by /u/" + \
                             submission.author.name + \
@@ -217,14 +227,15 @@ def followup_comment(submission, new_submission, gfy_converted):
         new_submission.add_comment(followup_comment_text)
         notify_comment(new_submission.permalink, submission, gfy_converted)
     except praw.errors.RateLimitExceeded:
-        print "\t--Rate Limit Exceeded"
+        log("--Rate Limit Exceeded", Color.RED)
     except praw.errors.APIException:
+        log('--API exception', Color.RED)
         logging.exception("Error on followupComment")
 
 
 # Notifying comment
 def notify_comment(new_url, submission, gfy_converted):
-    print("\tNotify Comment...")
+    log("--Notify Comment", Color.RED)
     notify_comment_text = "X-posted to [here](" + new_url + ").\n\n"
     notify_comment_text += commentTag
 
@@ -235,16 +246,16 @@ def notify_comment(new_url, submission, gfy_converted):
     try:
         submission.add_comment(notify_comment_text)
     except praw.errors.RateLimitExceeded:
-        print "\t--Rate Limit Exceeded"
+        log("--Rate Limit Exceeded", Color.RED)
     except praw.errors.APIException:
-        logging.exception("Error on notifyComment")
+        log('--API exception', Color.RED)
+        logging.exception("Error on followupComment")
 
 
 # Login
 def retrieve_login_credentials(login_type):
     if login_type == "propFile":
         # reading login info from a file, it should be username \n password
-        print "\t--Reading login.properties"
         with open("login.properties", "r") as loginFile:
             login_info = loginFile.readlines()
 
@@ -252,7 +263,6 @@ def retrieve_login_credentials(login_type):
         login_info[1] = login_info[1].replace('\n', '')
         return login_info
     if login_type == "env":
-        print "\t--Reading env variables"
         login_info = [os.environ['REDDIT_USERNAME'],
                       os.environ['REDDIT_PASSWORD']]
         return login_info
@@ -266,7 +276,7 @@ def gen_random_string():
 
 # Returns the .mp4 url of a vine video
 def retrieve_vine_video_url(vine_url):
-    print '\tConverting vine to gfycat'
+    log('--Converting vine to gfycat')
     d = pyquery.PyQuery(url=vine_url)
     video_url = d("meta[property=twitter\\:player\\:stream]").attr['content']
     video_url = video_url.partition("?")[0]
@@ -275,7 +285,7 @@ def retrieve_vine_video_url(vine_url):
 
 # Convert gifs to gfycat
 def gfycat_convert(url_to_convert):
-    print '\tConverting gif to gfycat'
+    log('--Converting gif to gfycat')
     encoded_url = urllib.quote(url_to_convert, '')
 
     # Convert
@@ -283,83 +293,103 @@ def gfycat_convert(url_to_convert):
                  '?fetchUrl=' + encoded_url
     conversion_response = requests.get(url_string)
     if conversion_response.status_code == 200:
-        print '\t--success'
+        log('----success', Color.GREEN)
         j = conversion_response.json()
         gfyname = j["gfyname"]
         return "http://gfycat.com/" + gfyname
     else:
-        print '\t--failed'
+        log('----failed', Color.RED)
         return "Error"
 
 
-# If the bot is already running
-if os.path.isfile('BotRunning'):
-    print("The bot is already running, shutting down")
-    exit_bot()
+# Main method
+if __name__ == "__main__":
+    # If the bot is already running
+    if os.path.isfile('BotRunning'):
+        log("The bot is already running, shutting down", Color.RED)
+        exit_bot()
 
-# The bot was not running
-# create the file that tell the bot is running
-open('BotRunning', 'w').close()
+    if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
+        import bmemcached
 
-print "(Starting Bot)"
+        log('Running on heroku, using memcached', Color.BOLD)
 
-print "(OS is " + sys.platform + ")"
+        running_on_heroku = True
+        mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').
+                               split(','),
+                               os.environ.get('MEMCACHEDCLOUD_USERNAME'),
+                               os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
 
-args = sys.argv
-loginType = "propFile"
+    # Register the function that get called on exit
+    atexit.register(exit_handler)
 
-if len(args) > 1:
-    print "\tGetting args..."
-    if "--testing" in args:
-        postSub = "pandanomic_testing"
-    if "--cron" in args:
-        cron = True
-    if "--env" in args:
-        loginType = "env"
-    if "--notify" in args and sys.platform == "darwin":
-        macUpdate = True
-    print "\t(Args: " + str(args[1:]) + ")"
+    # Register function to call on SIGINT
+    signal.signal(signal.SIGINT, signal_handler)
 
-r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
+    # The bot was not running
+    # create the file that tell the bot is running
+    open('BotRunning', 'w').close()
 
-try:
-    print "\tLogging in via " + loginType + "..."
-    loginInfo = retrieve_login_credentials(loginType)
-    r.login(loginInfo[0], loginInfo[1])
+    log("Starting Bot", Color.BOLD)
 
-except praw.errors:
-    print "LOGIN FAILURE"
-    exit_bot()
+    log("OS is " + sys.platform, Color.BOLD)
 
-# read off /r/coys
-coys_subreddit = r.get_subreddit('coys')
+    args = sys.argv
+    loginType = "propFile"
 
-# submit to /r/SpursGifs or /r/pandanomic_testing
-spursgifs_subreddit = r.get_subreddit(postSub)
+    if len(args) > 1:
+        log("Getting args", Color.BOLD)
+        if "--testing" in args:
+            postSub = "pandanomic_testing"
+        if "--env" in args:
+            loginType = "env"
+        if "--notify" in args and sys.platform == "darwin":
+            macUpdate = True
+        log("--(Args: " + str(args[1:]) + ")", Color.BOLD)
 
-allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com", "fitbamob.com"]
-allowedExtensions = [".gif"]
+    r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
 
-# Array with previously linked posts
-# Check the db cache first
-already_done = []
-if not running_on_heroku:
-    print "\tChecking cache..."
-    if os.path.isfile(dbFile):
-        with open(dbFile, 'r+') as db_file_load:
-            already_done = pickle.load(db_file_load)
+    try:
+        log("Retrieving login credentials via " + loginType, Color.BOLD)
+        loginInfo = retrieve_login_credentials(loginType)
+        r.login(loginInfo[0], loginInfo[1])
+        log("--Login successful", Color.GREEN)
 
-    print '(Cache size: ' + str(len(already_done)) + ")"
+    except praw.errors:
+        log("LOGIN FAILURE", Color.RED)
+        exit_bot()
 
-counter = 0
+    # read off /r/coys
+    coys_subreddit = r.get_subreddit('coys')
 
-if cron:
-    print "(Cron job)"
-    bot()
-else:
-    print "(Looping)"
-    while True:
+    # submit to /r/SpursGifs or /r/pandanomic_testing
+    spursgifs_subreddit = r.get_subreddit(postSub)
+
+    allowedDomains = ["gfycat.com", "vine.co", "giant.gfycat.com",
+                      "fitbamob.com"]
+
+    allowedExtensions = [".gif"]
+
+    # Array with previously linked posts
+    # Check the db cache first
+    already_done = []
+    if not running_on_heroku:
+        log("Loading cache", Color.BOLD)
+        if os.path.isfile(cache_file):
+            with open(cache_file, 'r+') as db_file_load:
+                already_done = pickle.load(db_file_load)
+
+        log('--Cache size: ' + str(len(already_done)))
+
+    counter = 0
+
+    if running_on_heroku:
+        log("Heroku run", Color.BOLD)
         bot()
-        counter += 1
-        print '(Looped - ' + str(counter) + ')'
-        time.sleep(60)
+    else:
+        log("Looping", Color.BOLD)
+        while True:
+            bot()
+            counter += 1
+            log('Looped - ' + str(counter), Color.BOLD)
+            time.sleep(60)

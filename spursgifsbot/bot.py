@@ -253,18 +253,18 @@ def notify_comment(new_url, submission, gfy_converted):
 
 
 # Login
-def retrieve_login_credentials(login_type):
-    if login_type == "propFile":
+def retrieve_login_credentials():
+    if running_on_heroku:
+        login_info = [os.environ['REDDIT_USERNAME'],
+                      os.environ['REDDIT_PASSWORD']]
+        return login_info
+    else:
         # reading login info from a file, it should be username \n password
         with open("login.properties", "r") as loginFile:
             login_info = loginFile.readlines()
 
         login_info[0] = login_info[0].replace('\n', '')
         login_info[1] = login_info[1].replace('\n', '')
-        return login_info
-    if login_type == "env":
-        login_info = [os.environ['REDDIT_USERNAME'],
-                      os.environ['REDDIT_PASSWORD']]
         return login_info
 
 
@@ -341,8 +341,6 @@ if __name__ == "__main__":
         log("Getting args", Color.BOLD)
         if "--testing" in args:
             postSub = "pandanomic_testing"
-        if "--env" in args:
-            loginType = "env"
         if "--notify" in args and sys.platform == "darwin":
             macUpdate = True
         log("--(Args: " + str(args[1:]) + ")", Color.BOLD)
@@ -350,8 +348,8 @@ if __name__ == "__main__":
     r = praw.Reddit('/u/spursgifs_xposterbot by /u/pandanomic')
 
     try:
-        log("Retrieving login credentials via " + loginType, Color.BOLD)
-        loginInfo = retrieve_login_credentials(loginType)
+        log("Retrieving login credentials", Color.BOLD)
+        loginInfo = retrieve_login_credentials()
         r.login(loginInfo[0], loginInfo[1])
         log("--Login successful", Color.GREEN)
 

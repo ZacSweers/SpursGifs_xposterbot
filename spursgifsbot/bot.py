@@ -17,7 +17,7 @@ import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
 import praw         # reddit wrapper
 import requests     # For URL requests, ued in gfycat API
-from pyquery        # For parsing vine html
+import pyquery        # For parsing vine html
 
 
 # tagline
@@ -34,9 +34,6 @@ dbFile = "spursgifs_xposterDB"
 
 # File with login credentials
 propsFile = "login.properties"
-
-# flag to check if db file's already checked
-fileOpened = False
 
 # subreddit to x-post to. Changes if testing
 postSub = "SpursGifs"
@@ -64,9 +61,9 @@ if os.environ.get('MEMCACHEDCLOUD_SERVERS', None):
 # Called when exiting the program
 def exit_handler():
     print "(SHUTTING DOWN)"
-    if not running_on_heroku and fileOpened:
-        pickle.dump(already_done, f)
-        f.close()
+    if not running_on_heroku:
+        with open(dbFile, 'r+') as db_file_save:
+            pickle.dump(already_done, db_file_save)
     os.remove("BotRunning")
 
 
@@ -270,7 +267,7 @@ def gen_random_string():
 # Returns the .mp4 url of a vine video
 def retrieve_vine_video_url(vine_url):
     print '\tConverting vine to gfycat'
-    d = pyquery.PyQuery(url=url)
+    d = pyquery.PyQuery(url=vine_url)
     video_url = d("meta[property=twitter\\:player\\:stream]").attr['content']
     video_url = video_url.partition("?")[0]
     return video_url
@@ -349,18 +346,10 @@ already_done = []
 if not running_on_heroku:
     print "\tChecking cache..."
     if os.path.isfile(dbFile):
-        f = open(dbFile, 'r+')
-
-        # If the file isn't at its end or empty
-        if f.tell() != os.fstat(f.fileno()).st_size:
-            already_done = pickle.load(f)
-        f.close()
-    f = open(dbFile, 'w+')
+        with open(dbFile, 'r+') as db_file_load:
+            already_done = pickle.load(db_file_load)
 
     print '(Cache size: ' + str(len(already_done)) + ")"
-
-# noinspection PyRedeclaration
-fileOpened = True
 
 counter = 0
 

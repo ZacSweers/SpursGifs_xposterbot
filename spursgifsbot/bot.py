@@ -173,7 +173,7 @@ def submit(subreddit, submission):
             url_to_submit = new_url_to_submit
             gfy_converted = True
 
-    log("--Submitting to /r/" + postSub)
+    log("--Submitting to /r/" + postSub, Color.BLUE)
     try:
         new_submission = subreddit.submit(
             submission.title + " (x-post from /r/coys)", url=url_to_submit)
@@ -216,7 +216,7 @@ def validate_submission(submission):
 
 # Followup Comment
 def followup_comment(submission, new_submission, gfy_converted):
-    log("--Followup Comment")
+    log("--Followup Comment", Color.BLUE)
     followup_comment_text = "Originally posted [here](" + \
                             submission.permalink + ") by /u/" + \
                             submission.author.name + \
@@ -229,13 +229,13 @@ def followup_comment(submission, new_submission, gfy_converted):
     except praw.errors.RateLimitExceeded:
         log("--Rate Limit Exceeded", Color.RED)
     except praw.errors.APIException:
-        log('--API exception', Color.RED)
+        log('--API exception', Color.GREEN)
         logging.exception("Error on followupComment")
 
 
 # Notifying comment
 def notify_comment(new_url, submission, gfy_converted):
-    log("--Notify Comment", Color.RED)
+    log("--Notify Comment", Color.BLUE)
     notify_comment_text = "X-posted to [here](" + new_url + ").\n\n"
     notify_comment_text += commentTag
 
@@ -276,7 +276,7 @@ def gen_random_string():
 
 # Returns the .mp4 url of a vine video
 def retrieve_vine_video_url(vine_url):
-    log('--Converting vine to gfycat')
+    log('--Retrieving vine url')
     d = pyquery.PyQuery(url=vine_url)
     video_url = d("meta[property=twitter\\:player\\:stream]").attr['content']
     video_url = video_url.partition("?")[0]
@@ -285,7 +285,7 @@ def retrieve_vine_video_url(vine_url):
 
 # Convert gifs to gfycat
 def gfycat_convert(url_to_convert):
-    log('--Converting gif to gfycat')
+    log('--Converting to gfycat')
     encoded_url = urllib.quote(url_to_convert, '')
 
     # Convert

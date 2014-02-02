@@ -15,6 +15,7 @@ import string       # Used in generating random strings
 import random       # ""
 import urllib       # For encoding urls
 import subprocess   # To send shell commands, used for local testing
+import datetime     # For getting timestamp
 import praw         # reddit wrapper
 import requests     # For URL requests, ued in gfycat API
 import pyquery      # For parsing vine html
@@ -333,6 +334,10 @@ if __name__ == "__main__":
     log("Starting Bot", Color.BOLD)
 
     log("OS is " + sys.platform, Color.BOLD)
+
+    # For logging purposes
+    log("CURRENT CST TIMESTAMP: " + datetime.datetime.fromtimestamp(
+        time.time() - 21600).strftime('%Y-%m-%d %H:%M:%S'), Color.BOLD)
 
     args = sys.argv
     loginType = "propFile"

@@ -43,7 +43,7 @@ commentTag = """------
 *Feedback/bug reports? Send a message to
 [pandanomic](http://www.reddit.com/message/compose?to=pandanomic).*
 
-*[Source code](https://github.com/pandanomic/SpursGifs_xposterbot)*"""
+*[Source code](https://github.com/hzsweers/SpursGifs_xposterbot)*"""
 
 # DB for caching previous posts
 cache_file = "spursgifs_xposterDB"

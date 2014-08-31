@@ -41,6 +41,4 @@ spursgifs_xposterDB
 BotRunning
 
 # PyCharm
-*.xml
-*.iml
 .idea/
